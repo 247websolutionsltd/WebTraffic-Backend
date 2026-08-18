@@ -30,7 +30,7 @@ const register = async (req, res) => {
       lastName,
       email,
       password,
-    } = req.body;
+    } = req.body || {};
 
     if (!firstName || !lastName || !email || !password) {
       return res.status(400).json({
@@ -38,7 +38,11 @@ const register = async (req, res) => {
       });
     }
 
-    const existingUser = await User.findOne({ email });
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const existingUser = await User.findOne({
+      email: normalizedEmail,
+    });
 
     if (existingUser) {
       return res.status(409).json({
@@ -49,15 +53,19 @@ const register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 12);
 
     const user = await User.create({
-      firstName,
-      lastName,
-      email,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      email: normalizedEmail,
       password: hashedPassword,
     });
 
+    console.log("USER CREATED:", user._id);
+
     const token = generateToken(user);
 
-    res.status(201).json({
+    console.log("TOKEN CREATED");
+
+    return res.status(201).json({
       message: "Registration successful",
       token,
       user: {
@@ -68,11 +76,13 @@ const register = async (req, res) => {
         role: user.role,
       },
     });
-  } catch (error) {
-    console.error(error);
 
-    res.status(500).json({
+  } catch (error) {
+    console.error("REGISTER ERROR:", error);
+
+    return res.status(500).json({
       message: "Server error",
+      error: error.message,
     });
   }
 };

@@ -1,4 +1,8 @@
+
 require("dotenv").config();
+const dns=require("node:dns/promises");
+
+dns.setServers(["1.1.1.1", "1.0.0.1"]);
 
 const express = require("express");
 const cors = require("cors");
@@ -8,23 +12,29 @@ const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const listingRoutes = require("./routes/listingRoutes");
+const uploadRoutes = require("./routes/uploadRoutes");
 
 const app = express();
 
 connectDB();
 
+// Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
+// Test route
 app.get("/", (req, res) => {
   res.json({
-    message: "Web Traffic API is running",
+    message: "E-commerce API is running",
   });
 });
 
+// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/listings", listingRoutes);
+app.use("/api/upload", uploadRoutes);
 
 const PORT = process.env.PORT || 5000;
 
