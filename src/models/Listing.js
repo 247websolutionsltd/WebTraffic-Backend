@@ -26,8 +26,7 @@ const listingSchema = new mongoose.Schema(
     },
 
     category: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Category",
+      type: String,
       required: true,
     },
 
