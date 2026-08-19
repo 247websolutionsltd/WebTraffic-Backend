@@ -129,6 +129,8 @@ const login = async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
+        profileImage: user.ptofileImage,
+        store: user.store,
         role: user.role,
       },
     });
@@ -166,6 +168,7 @@ const googleLogin = async (req, res) => {
       family_name: lastName,
       picture,
     } = payload;
+    console.log(payload)
 
     let user = await User.findOne({
       $or: [
