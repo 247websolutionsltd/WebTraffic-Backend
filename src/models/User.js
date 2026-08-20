@@ -43,11 +43,22 @@ const userSchema = new mongoose.Schema(
       default: "",
     },
 
-    store:[
+    ads:[
       {
         type: String,
       },
     ],
+
+    saved:[
+      {
+        type: String,
+      },
+    ],
+
+    store:
+    {
+      type: String,
+    },
 
     role: {
       type: String,

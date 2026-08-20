@@ -73,6 +73,9 @@ const register = async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
+        profileImage: user.profileImage,
+        phone: user.phone,
+        store: user.store,
         role: user.role,
       },
     });
@@ -129,7 +132,8 @@ const login = async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
-        profileImage: user.ptofileImage,
+        profileImage: user.profileImage,
+        phone: user.phone,
         store: user.store,
         role: user.role,
       },
@@ -214,8 +218,41 @@ const googleLogin = async (req, res) => {
   }
 };
 
+const getUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select(
+      "-password"
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    res.status(200).json({
+      message: "User retrieved successfully",
+      user: {
+        id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        profileImage: user.profileImage,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error("GET USER ERROR:", error);
+
+    res.status(500).json({
+      message: "Server error",
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
   googleLogin,
+  getUser
 };

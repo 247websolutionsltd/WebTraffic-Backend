@@ -3,8 +3,7 @@ const mongoose = require("mongoose");
 const listingSchema = new mongoose.Schema(
   {
     seller: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      type: String,
       required: true,
     },
 
@@ -28,6 +27,11 @@ const listingSchema = new mongoose.Schema(
     category: {
       type: String,
       required: true,
+    },
+
+    tag: {
+      type: String,
+      default: "none"
     },
 
     images: [

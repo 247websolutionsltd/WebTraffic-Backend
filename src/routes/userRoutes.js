@@ -6,6 +6,7 @@ const upload = require("../middleware/uploadMiddleware");
 
 const {
   updateProfileImage,
+  getUserById
 } = require("../controllers/userController");
 
 const protect = require("../middleware/authMiddleware");
@@ -16,5 +17,7 @@ router.post(
   upload.single("profileImage"),
   updateProfileImage
 );
+
+router.get("/:id", getUserById);
 
 module.exports = router;
