@@ -43,22 +43,27 @@ const userSchema = new mongoose.Schema(
       default: "",
     },
 
-    ads:[
+    // Stores the user follows
+    stores: [
       {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Store",
       },
     ],
 
-    saved:[
-      {
-        type: String,
-      },
-    ],
-
-    store:
-    {
-      type: String,
+    // Store owned by the user
+    store: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Store",
+      default: null,
     },
+
+    saved: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Listing",
+      },
+    ],
 
     role: {
       type: String,

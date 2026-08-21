@@ -76,7 +76,9 @@ const register = async (req, res) => {
         profileImage: user.profileImage,
         phone: user.phone,
         store: user.store,
+        stores: user.stores,
         role: user.role,
+        saved: user.saved
       },
     });
 
@@ -135,7 +137,9 @@ const login = async (req, res) => {
         profileImage: user.profileImage,
         phone: user.phone,
         store: user.store,
+        stores: user.stores,
         role: user.role,
+        saved: user.saved
       },
     });
   } catch (error) {
@@ -206,7 +210,11 @@ const googleLogin = async (req, res) => {
         lastName: user.lastName,
         email: user.email,
         profileImage: user.profileImage,
+        phone: user.phone,
+        store: user.store,
+        stores: user.stores,
         role: user.role,
+        saved: user.saved
       },
     });
   } catch (error) {
@@ -222,7 +230,8 @@ const getUser = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select(
       "-password"
-    );
+    ).populate("store")
+    .populate("stores");
 
     if (!user) {
       return res.status(404).json({
@@ -238,7 +247,11 @@ const getUser = async (req, res) => {
         lastName: user.lastName,
         email: user.email,
         profileImage: user.profileImage,
+        phone: user.phone,
+        store: user.store,
+        stores: user.stores,
         role: user.role,
+        saved: user.saved
       },
     });
   } catch (error) {
