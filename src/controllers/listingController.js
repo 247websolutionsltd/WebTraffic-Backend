@@ -1,36 +1,157 @@
 const Listing = require("../models/Listing");
+const uploadToCloudinary = require("../utils/uploadToCloudinary");
+const Category = require("../models/Category");
 
 const createListing = async (req, res) => {
   try {
+    console.log("=================================");
+    console.log("CREATE LISTING REQUEST");
+    console.log("USER:", req.user);
+    console.log("BODY:", req.body);
+    console.log("FILES:", req.files?.length || 0);
+    console.log("=================================");
+
     const {
       title,
       description,
       price,
       category,
-      images,
       quantity,
       condition,
-      location,
+      city,
+      state,
+      country,
     } = req.body;
 
+    // const listing = await Listing.create({
+    //   seller: req.user.id,
+    //   title,
+    //   description,
+    //   price,
+    //   category,
+    //   images:imageUrls,
+    //   quantity,
+    //   condition,
+    //   location,
+    // });
+
+    if (!title || !title.trim()) {
+      return res.status(400).json({
+        message: "Title is required",
+      });
+    }
+
+    if (!description || !description.trim()) {
+      return res.status(400).json({
+        message: "Description is required",
+      });
+    }
+
+    if (!category) {
+      return res.status(400).json({
+        message: "Category is required",
+      });
+    }
+
+    if (!price) {
+      return res.status(400).json({
+        message: "Price is required",
+      });
+    }
+
+    if (!condition) {
+      return res.status(400).json({
+        message: "Condition is required",
+      });
+    }
+    
+    const categoryExists = await Category.findById(category);
+
+    if (!categoryExists) {
+      return res.status(404).json({
+        message: "Category not found",
+      });
+    }
+
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({
+        message: "At least one image is required",
+      });
+    }
+
+    if (req.files.length > 6) {
+      return res.status(400).json({
+        message: "You can upload a maximum of 6 images",
+      });
+    }
+
+    console.log(
+      `Uploading ${req.files.length} images to Cloudinary...`
+    );
+
+    const uploadedImages = await Promise.all(
+      req.files.map((file) =>
+        uploadToCloudinary(
+          file,
+          "webtraffic/listings"
+        )
+      )
+    );
+
+    // Get the Cloudinary URLs
+    const imageUrls = uploadedImages.map(
+      (image) => image.secure_url
+    );
+
+    console.log("Cloudinary images:");
+    console.log(imageUrls);
+
     const listing = await Listing.create({
+      title: title.trim(),
+
+      description: description.trim(),
+
+      price: Number(price),
+
+      quantity: quantity
+        ? Number(quantity)
+        : 1,
+
+      condition: condition.toLowerCase(),
+
+      category: category,
+
+      images: imageUrls,
+
+      location: {
+        city: city || "",
+        state: state || "",
+        country: country || "Nigeria",
+      },
+
       seller: req.user.id,
-      title,
-      description,
-      price,
-      category,
-      images,
-      quantity,
-      condition,
-      location,
     });
 
-    res.status(201).json(listing);
-  } catch (error) {
-    console.error(error);
+    console.log(
+      "LISTING CREATED:",
+      listing._id
+    );
 
-    res.status(500).json({
+    return res.status(201).json({
+      message: "Listing created successfully",
+
+      listing,
+    });
+
+  } catch (error) {
+     console.error(
+      "CREATE LISTING ERROR:",
+      error
+    );
+
+    return res.status(500).json({
       message: "Failed to create listing",
+      error: error.message,
     });
   }
 };
