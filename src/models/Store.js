@@ -11,6 +11,7 @@ const storeSchema = new mongoose.Schema(
     description: {
       type: String,
       default: "",
+      trim: true,
     },
 
     logo: {
@@ -29,25 +30,43 @@ const storeSchema = new mongoose.Schema(
       default: "",
     },
 
+    email: {
+      type: String,
+      default: "",
+      lowercase: true,
+      trim: true,
+    },
+
     location: {
       city: {
         type: String,
         default: "",
       },
+
       state: {
         type: String,
         default: "",
       },
+
       country: {
         type: String,
         default: "Nigeria",
       },
     },
 
-    followersCount: {
-      type: Number,
-      default: 0,
-    },
+    followers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+
+    listings: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Listing",
+      },
+    ],
 
     isActive: {
       type: Boolean,

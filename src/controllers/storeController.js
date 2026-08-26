@@ -1,14 +1,20 @@
 const Store = require("../models/Store");
 const User = require("../models/User");
+const uploadToCloudinary = require("../utils/uploadToCloudinary");
+const cloudinary = require("../config/cloudinary");
+const streamifier = require("streamifier");
 
 const createStore = async (req, res) => {
   try {
     const {
       name,
       description,
-      logo,
-      phone,
-      location,
+      handle,
+      category,
+      image,
+      city,
+      state,
+      country
     } = req.body;
 
     if (!name) {
@@ -21,19 +27,53 @@ const createStore = async (req, res) => {
     const existingStore = await Store.findOne({
       owner: req.user.id,
     });
+    
 
     if (existingStore) {
       return res.status(409).json({
         message: "You already have a store",
       });
     }
+    console.log(req.files);
+    const uploadedImage = await new Promise(
+      (resolve, reject) => {
+        const uploadStream =
+          cloudinary.uploader.upload_stream(
+            {
+              folder: "webtraffic/store-images",
+              resource_type: "image",
+            },
+            (error, result) => {
+              if (error) {
+                reject(error);
+              } else {
+                resolve(result);
+              }
+            }
+          );
+
+        streamifier
+          .createReadStream(req.file.buffer)
+          .pipe(uploadStream);
+      }
+    );
+    console.log("Cloudinary images:");
+    console.log(uploadedImage);
+
+   
 
     const store = await Store.create({
-      name,
-      description: description || "",
-      logo: logo || "",
-      phone: phone || "",
-      location: location || {},
+      name: name.trim(),
+      description: description.trim(),
+      logo: uploadedImage.url,
+      phone: req.user.phone || "",
+      location: {
+        city: city || "",
+        state: state || "",
+        country: country || "Nigeria",
+      },
+      followerCount:0,
+      isactive:true,
       owner: req.user.id,
     });
 
@@ -184,9 +224,46 @@ const getStores = async (req, res) => {
   }
 };
 
+const getMyStore = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const store = await Store.findOne({
+      owner: userId,
+    })
+      .populate(
+        "owner",
+        "firstName lastName email profileImage"
+      )
+      .populate("listings")
+      .populate(
+        "followers",
+        "firstName lastName profileImage"
+      );
+
+    if (!store) {
+      return res.status(404).json({
+        message: "You don't have a store yet",
+      });
+    }
+
+    return res.status(200).json({
+      store,
+    });
+
+  } catch (error) {
+    console.error("GET MY STORE ERROR:", error);
+
+    return res.status(500).json({
+      message: "Failed to fetch your store",
+    });
+  }
+};
+
 module.exports = {
   createStore,
   followStore,
   unfollowStore,
-  getStores
+  getStores,
+  getMyStore
 };

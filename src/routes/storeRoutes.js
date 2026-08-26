@@ -6,12 +6,14 @@ const {
   createStore,
   followStore,
   unfollowStore,
-  getStores
+  getStores,
+  getMyStore
 } = require("../controllers/storeController");
 
 const protect = require("../middleware/authMiddleware");
+const upload = require("../middleware/uploadMiddleware");
 
-router.post("/", protect, createStore);
+router.post("/", protect, upload.single("image"), createStore);
 router.post(
   "/:storeId/follow",
   protect,
@@ -21,6 +23,12 @@ router.delete(
   "/:storeId/follow",
   protect,
   unfollowStore
+);
+
+router.get(
+  "/my-store",
+  protect,
+  getMyStore
 );
 
 router.get("/", getStores);
