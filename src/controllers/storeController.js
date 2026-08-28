@@ -235,7 +235,7 @@ const getMyStore = async (req, res) => {
       });
     }
 
-    const store = await Store.findById(id)
+    const store = await Store.findById(req.params)
       .populate(
         "owner",
         "firstName lastName email profileImage"
