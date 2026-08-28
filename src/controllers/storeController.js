@@ -227,11 +227,15 @@ const getStores = async (req, res) => {
 const getMyStore = async (req, res) => {
   console.log(req.user.id)
   try {
-    const userId = req.user.id;
+    const { id } = req.params;
 
-    const store = await Store.findOne({
-      owner: userId,
-    })
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        message: "Invalid store ID",
+      });
+    }
+
+    const store = await Store.findById(id)
       .populate(
         "owner",
         "firstName lastName email profileImage"
