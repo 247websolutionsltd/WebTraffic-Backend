@@ -231,7 +231,7 @@ const getUser = async (req, res) => {
     const user = await User.findById(req.user.id).select(
       "-password"
     ).populate("store")
-    .populate("stores");
+    .populate("stores", "name profileImage");
 
     if (!user) {
       return res.status(404).json({
