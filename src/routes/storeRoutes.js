@@ -28,11 +28,7 @@ router.delete(
 
 router.get("/:id", getStoreById);
 
-router.get(
-  "/my-store",
-  protect,
-  getMyStore
-);
+router.get("/my-store", protect, getMyStore);
 
 router.get("/", getStores);
 
