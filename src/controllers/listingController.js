@@ -21,6 +21,7 @@ const createListing = async (req, res) => {
       city,
       state,
       country,
+      store
     } = req.body;
 
     // const listing = await Listing.create({
@@ -130,7 +131,7 @@ const createListing = async (req, res) => {
       },
 
       seller: req.user.id,
-      store: req.user.store || null,
+      store: store || null,
     });
 
     console.log(
