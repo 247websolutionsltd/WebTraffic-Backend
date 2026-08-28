@@ -225,6 +225,7 @@ const getStores = async (req, res) => {
 };
 
 const getMyStore = async (req, res) => {
+  console.log(req.user.id)
   try {
     const userId = req.user.id;
 
