@@ -250,9 +250,38 @@ const getSellerListings = async (req, res) => {
   }
 };
 
+const getStoreListings = async (req, res) => {
+  try {
+    const { storeId } = req.params;
+
+    const listings = await Listing.find({
+      store: storeId,
+    })
+      .populate("category", "name")
+      .populate("store", "name profileImage")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      count: listings.length,
+      listings,
+    });
+
+  } catch (error) {
+    console.error(
+      "GET STORE LISTINGS ERROR:",
+      error
+    );
+
+    return res.status(500).json({
+      message: "Failed to fetch seller listings",
+    });
+  }
+};
+
 module.exports = {
   createListing,
   getListings,
   getListing,
-  getSellerListings
+  getSellerListings,
+  getStoreListings
 };
