@@ -130,6 +130,7 @@ const createListing = async (req, res) => {
       },
 
       seller: req.user.id,
+      store: req.user.store || null,
     });
 
     console.log(
@@ -161,7 +162,7 @@ const getListings = async (req, res) => {
     const listings = await Listing.find({
       isActive: true,
     })
-      .populate("category", "name image")
+      .populate("category")
       .populate(
         "seller",
         "firstName lastName profileImage"
@@ -182,11 +183,20 @@ const getListings = async (req, res) => {
 
 const getListing = async (req, res) => {
   try {
-    const listing = await Listing.findById(req.params.id)
-      .populate("category")
+    const { id } = req.params;
+
+    const listing = await Listing.findById(id)
       .populate(
         "seller",
-        "firstName lastName profileImage"
+        "firstName lastName email phone profileImage timestamps"
+      )
+      .populate(
+        "category",
+        "name"
+      )
+      .populate(
+        "store",
+        "name profileImage description followers timestamps"
       );
 
     if (!listing) {
@@ -195,10 +205,46 @@ const getListing = async (req, res) => {
       });
     }
 
-    res.json(listing);
+    return res.status(200).json({
+      listing,
+    });
+
   } catch (error) {
-    res.status(500).json({
+    console.error(
+      "GET LISTING ERROR:",
+      error
+    );
+
+    return res.status(500).json({
       message: "Failed to fetch listing",
+    });
+  }
+};
+
+const getSellerListings = async (req, res) => {
+  try {
+    const { sellerId } = req.params;
+
+    const listings = await Listing.find({
+      seller: sellerId,
+    })
+      .populate("category", "name")
+      .populate("store", "name profileImage")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      count: listings.length,
+      listings,
+    });
+
+  } catch (error) {
+    console.error(
+      "GET SELLER LISTINGS ERROR:",
+      error
+    );
+
+    return res.status(500).json({
+      message: "Failed to fetch seller listings",
     });
   }
 };
@@ -207,4 +253,5 @@ module.exports = {
   createListing,
   getListings,
   getListing,
+  getSellerListings
 };

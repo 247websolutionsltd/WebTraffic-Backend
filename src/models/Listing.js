@@ -2,11 +2,6 @@ const mongoose = require("mongoose");
 
 const listingSchema = new mongoose.Schema(
   {
-    seller: {
-      type: String,
-      required: true,
-    },
-
     title: {
       type: String,
       required: true,
@@ -25,8 +20,21 @@ const listingSchema = new mongoose.Schema(
     },
 
     category: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
       required: true,
+    },
+
+    seller: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    store: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Store",
+      default: null,
     },
 
     tag: {

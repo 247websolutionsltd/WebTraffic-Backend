@@ -4,6 +4,7 @@ const {
   createListing,
   getListings,
   getListing,
+  getSellerListings
 } = require("../controllers/listingController");
 
 const protect = require("../middleware/authMiddleware");
@@ -16,5 +17,10 @@ router.get("/", getListings);
 router.get("/:id", getListing);
 
 router.post("/", protect, upload.array("images", 6), createListing);
+
+router.get(
+  "/seller/:sellerId",
+  getSellerListings
+);
 
 module.exports = router;

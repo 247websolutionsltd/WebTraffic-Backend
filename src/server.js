@@ -16,6 +16,7 @@ const uploadRoutes = require("./routes/uploadRoutes");
 const userRoutes = require("./routes/userRoutes");
 const storeRoutes = require("./routes/storeRoutes");
 const favoriteRoutes = require("./routes/favoriteRoutes");
+const messageRoutes = require("./routes/messageRoutes");
 
 const app = express();
 
@@ -41,7 +42,7 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/stores", storeRoutes);
 app.use("/api/favorites", favoriteRoutes);
-
+app.use("/api/messages", messageRoutes);
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, "0.0.0.0", () => {

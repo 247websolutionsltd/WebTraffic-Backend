@@ -260,10 +260,45 @@ const getMyStore = async (req, res) => {
   }
 };
 
+const getStoreById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const store = await Store.findById(id)
+      .populate(
+        "owner",
+        "firstName lastName profileImage phone"
+      )
+      .populate(
+        "listings",
+        "title price images condition"
+      );
+
+    if (!store) {
+      return res.status(404).json({
+        message: "Store not found",
+      });
+    }
+
+    return res.status(200).json({
+      store,
+    });
+
+  } catch (error) {
+    console.error("GET STORE ERROR:", error);
+
+    return res.status(500).json({
+      message: "Failed to fetch store",
+    });
+  }
+};
+
+
 module.exports = {
   createStore,
   followStore,
   unfollowStore,
   getStores,
-  getMyStore
+  getMyStore,
+  getStoreById,
 };

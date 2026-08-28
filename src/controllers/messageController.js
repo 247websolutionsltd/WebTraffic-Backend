@@ -1,0 +1,289 @@
+const Conversation = require("../models/Conversation");
+const Listing = require("../models/Listing");
+const Message = require("../models/Message");
+
+const createConversation = async (req, res) => {
+  try {
+    const buyerId = req.user.id;
+
+    const {
+      listingId,
+      sellerId,
+    } = req.body;
+
+    if (!listingId || !sellerId) {
+      return res.status(400).json({
+        message: "Listing and seller are required",
+      });
+    }
+
+    // Don't allow someone to message themselves
+    if (buyerId === sellerId) {
+      return res.status(400).json({
+        message: "You cannot message yourself",
+      });
+    }
+
+    // Make sure listing exists
+    const listing = await Listing.findById(
+      listingId
+    );
+
+    if (!listing) {
+      return res.status(404).json({
+        message: "Listing not found",
+      });
+    }
+
+    // Make sure seller actually owns the listing
+    if (
+      listing.seller.toString() !==
+      sellerId.toString()
+    ) {
+      return res.status(400).json({
+        message:
+          "This seller does not own this listing",
+      });
+    }
+
+    // Check if conversation already exists
+    let conversation =
+      await Conversation.findOne({
+        buyer: buyerId,
+        seller: sellerId,
+        listing: listingId,
+      });
+
+    // Create if it doesn't exist
+    if (!conversation) {
+      conversation =
+        await Conversation.create({
+          buyer: buyerId,
+          seller: sellerId,
+          listing: listingId,
+        });
+    }
+
+    const populatedConversation =
+      await Conversation.findById(
+        conversation._id
+      )
+        .populate(
+          "buyer",
+          "firstName lastName profileImage"
+        )
+        .populate(
+          "seller",
+          "firstName lastName profileImage"
+        )
+        .populate(
+          "listing",
+          "title price images"
+        );
+
+    return res.status(200).json({
+      conversation:
+        populatedConversation,
+    });
+
+  } catch (error) {
+    console.error(
+      "CREATE CONVERSATION ERROR:",
+      error
+    );
+
+    return res.status(500).json({
+      message: "Failed to create conversation",
+    });
+  }
+};
+
+
+
+const sendMessage = async (req, res) => {
+  try {
+    const senderId = req.user.id;
+
+    const {
+      conversationId,
+      text,
+    } = req.body;
+
+    if (!conversationId || !text?.trim()) {
+      return res.status(400).json({
+        message: "Conversation and message are required",
+      });
+    }
+
+    const conversation =
+      await Conversation.findById(
+        conversationId
+      );
+
+    if (!conversation) {
+      return res.status(404).json({
+        message: "Conversation not found",
+      });
+    }
+
+    // Make sure sender belongs to conversation
+    const isParticipant =
+      conversation.buyer.toString() ===
+        senderId.toString() ||
+      conversation.seller.toString() ===
+        senderId.toString();
+
+    if (!isParticipant) {
+      return res.status(403).json({
+        message: "You are not part of this conversation",
+      });
+    }
+
+    const message = await Message.create({
+      conversation: conversationId,
+      sender: senderId,
+      text: text.trim(),
+    });
+
+    // Update conversation
+    conversation.lastMessage = message._id;
+    conversation.lastMessageAt =
+      message.createdAt;
+
+    await conversation.save();
+
+    const populatedMessage =
+      await Message.findById(message._id)
+        .populate(
+          "sender",
+          "firstName lastName profileImage"
+        );
+
+    return res.status(201).json({
+      message: populatedMessage,
+    });
+
+  } catch (error) {
+    console.error(
+      "SEND MESSAGE ERROR:",
+      error
+    );
+
+    return res.status(500).json({
+      message: "Failed to send message",
+    });
+  }
+};
+
+const getMessages = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { conversationId } = req.params;
+
+    const conversation =
+      await Conversation.findById(
+        conversationId
+      );
+
+    if (!conversation) {
+      return res.status(404).json({
+        message: "Conversation not found",
+      });
+    }
+
+    const isParticipant =
+      conversation.buyer.toString() ===
+        userId.toString() ||
+      conversation.seller.toString() ===
+        userId.toString();
+
+    if (!isParticipant) {
+      return res.status(403).json({
+        message: "Access denied",
+      });
+    }
+
+    const messages =
+      await Message.find({
+        conversation: conversationId,
+      })
+        .populate(
+          "sender",
+          "firstName lastName profileImage"
+        )
+        .sort({
+          createdAt: 1,
+        });
+
+    return res.status(200).json({
+      messages,
+    });
+
+  } catch (error) {
+    console.error(
+      "GET MESSAGES ERROR:",
+      error
+    );
+
+    return res.status(500).json({
+      message: "Failed to fetch messages",
+    });
+  }
+};
+
+const getMyConversations = async (
+  req,
+  res
+) => {
+  try {
+    const userId = req.user.id;
+
+    const conversations =
+      await Conversation.find({
+        $or: [
+          { buyer: userId },
+          { seller: userId },
+        ],
+      })
+        .populate(
+          "buyer",
+          "firstName lastName profileImage"
+        )
+        .populate(
+          "seller",
+          "firstName lastName profileImage"
+        )
+        .populate(
+          "listing",
+          "title price images"
+        )
+        .populate(
+          "lastMessage",
+          "text sender createdAt"
+        )
+        .sort({
+          lastMessageAt: -1,
+        });
+
+    return res.status(200).json({
+      conversations,
+    });
+
+  } catch (error) {
+    console.error(
+      "GET CONVERSATIONS ERROR:",
+      error
+    );
+
+    return res.status(500).json({
+      message: "Failed to fetch conversations",
+    });
+  }
+};
+
+module.exports = {
+  createConversation,
+  sendMessage,
+  getMessages,
+  getMyConversations
+};

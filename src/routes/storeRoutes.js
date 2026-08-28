@@ -7,7 +7,8 @@ const {
   followStore,
   unfollowStore,
   getStores,
-  getMyStore
+  getMyStore,
+  getStoreById,
 } = require("../controllers/storeController");
 
 const protect = require("../middleware/authMiddleware");
@@ -24,6 +25,8 @@ router.delete(
   protect,
   unfollowStore
 );
+
+router.get("/:id", getStoreById);
 
 router.get(
   "/my-store",
