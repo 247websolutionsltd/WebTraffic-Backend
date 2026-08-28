@@ -25,7 +25,7 @@ router.get(
 );
 
 router.get(
-  "/seller/:storeId",
+  "/store/:storeId",
   getStoreListings
 );
 
