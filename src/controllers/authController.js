@@ -489,7 +489,7 @@ const requestAccountDeletion = async (req, res) => {
     const resend = require("../config/email");
 
     await resend.emails.send({
-      from: "WebTraffic <onboarding@resend.dev>",
+      from: "WebTraffic <tomyomo@gmail.com>",
       to: [user.email],
 
       subject: "Confirm your WebTraffic account deletion",
@@ -565,10 +565,22 @@ const requestAccountDeletion = async (req, res) => {
       `,
     });
 
+    if (error) {
+      console.error("RESEND ERROR:", error);
+
+      return res.status(500).json({
+        message: "Failed to send confirmation email",
+        error: error.message,
+      });
+    }
+
+console.log("RESEND EMAIL SUCCESS:", data);
+
     return res.status(200).json({
       message:
         "A confirmation email has been sent to your email address.",
     });
+    
 
   } catch (error) {
     console.error(
