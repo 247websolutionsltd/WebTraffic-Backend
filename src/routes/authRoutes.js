@@ -6,6 +6,8 @@ const {
   googleLogin,
   getUser,
   deleteAccount,
+  requestAccountDeletion,
+  confirmAccountDeletion
 } = require("../controllers/authController");
 
 const router = express.Router();
