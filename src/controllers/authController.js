@@ -487,6 +487,7 @@ const requestAccountDeletion = async (req, res) => {
       `${process.env.FRONTEND_URL}/delete-account/${rawToken}`;
 
     const resend = require("../config/email");
+    console.log(user.email)
 
     await resend.emails.send({
       from: "WebTraffic <onboarding@resend.dev>",
