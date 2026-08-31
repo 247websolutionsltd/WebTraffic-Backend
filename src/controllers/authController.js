@@ -7,8 +7,9 @@ const Store = require("../models/Store");
 const User = require("../models/User");
 const Conversation = require("../models/Conversation");
 const Message = require("../models/Message");
-const resend = require("../config/email");
+
 const crypto = require("crypto");
+const transporter = require("../config/email");
 
 const googleClient = new OAuth2Client(
   process.env.GOOGLE_CLIENT_ID
@@ -486,11 +487,8 @@ const requestAccountDeletion = async (req, res) => {
     const deletionUrl =
       `${process.env.FRONTEND_URL}/delete-account/${rawToken}`;
 
-    const resend = require("../config/email");
-    console.log(user.email)
-
-    await resend.emails.send({
-      from: "WebTraffic <onboarding@resend.dev>",
+    await transporter.sendMail({
+      from: `"WebTraffic" <${process.env.EMAIL_USER}>`,
       to: user.email,
 
       subject: "Confirm your WebTraffic account deletion",
@@ -528,10 +526,7 @@ const requestAccountDeletion = async (req, res) => {
                 to confirm the deletion.
               </p>
 
-              <div style="
-                text-align: center;
-                margin: 30px 0;
-              ">
+              <div style="text-align: center; margin: 30px 0;">
 
                 <a
                   href="${deletionUrl}"
@@ -557,6 +552,11 @@ const requestAccountDeletion = async (req, res) => {
               <p>
                 If you did not request this, you can safely
                 ignore this email.
+              </p>
+
+              <p>
+                Your account will not be deleted unless
+                the confirmation link is clicked.
               </p>
 
             </div>
