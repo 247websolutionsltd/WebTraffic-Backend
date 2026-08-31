@@ -5,6 +5,8 @@ const Listing = require("../models/Listing");
 const Store = require("../models/Store");
 
 const User = require("../models/User");
+const Conversation = require("../models/Conversation");
+const Message = require("../models/Message");
 
 const googleClient = new OAuth2Client(
   process.env.GOOGLE_CLIENT_ID
@@ -266,40 +268,185 @@ const getUser = async (req, res) => {
 };
 
 const deleteAccount = async (req, res) => {
+  const session = await mongoose.startSession();
+
   try {
-    const userId = req.user.id;
+    const { email } = req.body;
 
-    const user = await User.findById(userId);
-
-    if (!user) {
-      return res.status(404).json({
-        message: "User not found",
+    if (!email) {
+      return res.status(400).json({
+        message: "Email is required",
       });
     }
 
-    // Delete user's listings
-    await Listing.deleteMany({
+    session.startTransaction();
+
+    // Find user by email
+    const user = await User.findOne({
+      email: email.toLowerCase().trim(),
+    }).session(session);
+
+    if (!user) {
+      await session.abortTransaction();
+
+      return res.status(404).json({
+        message: "Account not found",
+      });
+    }
+
+    const userId = user._id;
+
+    // Find listings
+    const listings = await Listing.find({
       seller: userId,
-    });
+    })
+      .select("_id")
+      .session(session);
 
-    // Delete user's stores
-    await Store.deleteMany({
+    const listingIds = listings.map(
+      (listing) => listing._id
+    );
+
+    // Find stores
+    const stores = await Store.find({
       owner: userId,
-    });
+    })
+      .select("_id")
+      .session(session);
 
-    // Delete the user
-    await User.findByIdAndDelete(userId);
+    const storeIds = stores.map(
+      (store) => store._id
+    );
+
+    // Remove listings from favorites
+    if (listingIds.length > 0) {
+      await User.updateMany(
+        {
+          saved: {
+            $in: listingIds,
+          },
+        },
+        {
+          $pull: {
+            saved: {
+              $in: listingIds,
+            },
+          },
+        },
+        { session }
+      );
+    }
+
+    // Remove stores from followers
+    if (storeIds.length > 0) {
+      await User.updateMany(
+        {
+          followingStores: {
+            $in: storeIds,
+          },
+        },
+        {
+          $pull: {
+            followingStores: {
+              $in: storeIds,
+            },
+          },
+        },
+        { session }
+      );
+    }
+
+    // Anonymize messages
+    await Message.updateMany(
+      {
+        sender: userId,
+      },
+      {
+        $set: {
+          sender: null,
+        },
+      },
+      { session }
+    );
+
+    // Remove user from conversations
+    await Conversation.updateMany(
+      {
+        buyer: userId,
+      },
+      {
+        $set: {
+          buyer: null,
+        },
+      },
+      { session }
+    );
+
+    await Conversation.updateMany(
+      {
+        seller: userId,
+      },
+      {
+        $set: {
+          seller: null,
+        },
+      },
+      { session }
+    );
+
+    // Delete listings
+    if (listingIds.length > 0) {
+      await Listing.deleteMany(
+        {
+          _id: {
+            $in: listingIds,
+          },
+        },
+        { session }
+      );
+    }
+
+    // Delete stores
+    if (storeIds.length > 0) {
+      await Store.deleteMany(
+        {
+          _id: {
+            $in: storeIds,
+          },
+        },
+        { session }
+      );
+    }
+
+    // Delete user
+    await User.deleteOne(
+      {
+        _id: userId,
+      },
+      { session }
+    );
+
+    await session.commitTransaction();
 
     return res.status(200).json({
       message: "Account deleted successfully",
     });
 
   } catch (error) {
-    console.error("DELETE ACCOUNT ERROR:", error);
+    await session.abortTransaction();
+
+    console.error(
+      "DELETE ACCOUNT ERROR:",
+      error
+    );
 
     return res.status(500).json({
-      message: "Failed to delete account",
+      message:
+        "Unable to delete account. Please try again.",
     });
+
+  } finally {
+    await session.endSession();
   }
 };
 

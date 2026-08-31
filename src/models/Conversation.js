@@ -5,19 +5,19 @@ const conversationSchema = new mongoose.Schema(
     buyer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      default: null,
     },
 
     seller: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      default: null,
     },
 
     listing: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Listing",
-      required: true,
+      default: null,
     },
 
     lastMessage: {
