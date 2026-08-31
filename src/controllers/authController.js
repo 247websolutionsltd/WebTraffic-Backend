@@ -9,7 +9,6 @@ const Conversation = require("../models/Conversation");
 const Message = require("../models/Message");
 
 const crypto = require("crypto");
-const User = require("../models/User");
 const transporter = require("../config/email");
 
 const googleClient = new OAuth2Client(
