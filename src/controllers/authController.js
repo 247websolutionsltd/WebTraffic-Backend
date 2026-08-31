@@ -8,6 +8,10 @@ const User = require("../models/User");
 const Conversation = require("../models/Conversation");
 const Message = require("../models/Message");
 
+const crypto = require("crypto");
+const User = require("../models/User");
+const transporter = require("../config/email");
+
 const googleClient = new OAuth2Client(
   process.env.GOOGLE_CLIENT_ID
 );
@@ -450,10 +454,348 @@ const deleteAccount = async (req, res) => {
   }
 };
 
+const requestAccountDeletion = async (req, res) => {
+  try {
+    const user = await User.findOne({
+      email: req.user.email.toLowerCase().trim(),
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        message: "Account not found",
+      });
+    }
+
+    // Generate secure random token
+    const rawToken = crypto.randomBytes(32).toString("hex");
+
+    // Store only the hash in MongoDB
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(rawToken)
+      .digest("hex");
+
+    user.deleteAccountToken = hashedToken;
+
+    // Token expires in 30 minutes
+    user.deleteAccountTokenExpires = new Date(
+      Date.now() + 30 * 60 * 1000
+    );
+
+    await user.save();
+
+    // URL the user will click
+    const deletionUrl =
+      `${process.env.FRONTEND_URL}/delete-account/${rawToken}`;
+
+    await transporter.sendMail({
+      from: `"WebTraffic" <${process.env.EMAIL_USER}>`,
+      to: user.email,
+
+      subject: "Confirm your WebTraffic account deletion",
+
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <body style="
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 40px;
+          ">
+
+            <div style="
+              max-width: 600px;
+              margin: auto;
+              background: white;
+              padding: 40px;
+              border-radius: 10px;
+            ">
+
+              <h2>Confirm Account Deletion</h2>
+
+              <p>
+                Hello ${user.firstName},
+              </p>
+
+              <p>
+                We received a request to permanently delete
+                your WebTraffic account.
+              </p>
+
+              <p>
+                If you requested this, click the button below
+                to confirm the deletion.
+              </p>
+
+              <div style="text-align: center; margin: 30px 0;">
+
+                <a
+                  href="${deletionUrl}"
+                  style="
+                    display: inline-block;
+                    padding: 15px 25px;
+                    background: #d32f2f;
+                    color: white;
+                    text-decoration: none;
+                    border-radius: 6px;
+                    font-weight: bold;
+                  "
+                >
+                  Confirm Account Deletion
+                </a>
+
+              </div>
+
+              <p>
+                This link will expire in 30 minutes.
+              </p>
+
+              <p>
+                If you did not request this, you can safely
+                ignore this email.
+              </p>
+
+              <p>
+                Your account will not be deleted unless
+                the confirmation link is clicked.
+              </p>
+
+            </div>
+
+          </body>
+        </html>
+      `,
+    });
+
+    return res.status(200).json({
+      message:
+        "A confirmation email has been sent to your email address.",
+    });
+
+  } catch (error) {
+    console.error(
+      "DELETE REQUEST ERROR:",
+      error
+    );
+
+    return res.status(500).json({
+      message:
+        "Unable to send account deletion email.",
+    });
+  }
+};
+
+const confirmAccountDeletion = async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    if (!token) {
+      return res.status(400).send(`
+        <h2>Invalid deletion link</h2>
+      `);
+    }
+
+    // Hash token
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
+
+    // Find user
+    const user = await User.findOne({
+      deleteAccountToken: hashedToken,
+      deleteAccountTokenExpires: {
+        $gt: new Date(),
+      },
+    });
+
+    if (!user) {
+      return res.status(400).send(`
+        <html>
+          <body style="font-family: Arial; padding: 40px;">
+            <h2>Link expired or invalid</h2>
+
+            <p>
+              This account deletion link is no longer valid.
+              Please request a new deletion link from the app.
+            </p>
+          </body>
+        </html>
+      `);
+    }
+
+    /*
+     * At this point the user has clicked
+     * the valid confirmation link.
+     *
+     * Now perform your deletion process.
+     */
+
+    const userId = user._id;
+
+    // Find listings
+    const listings = await Listing.find({
+      seller: userId,
+    }).select("_id");
+
+    const listingIds = listings.map(
+      listing => listing._id
+    );
+
+    // Find stores
+    const stores = await Store.find({
+      owner: userId,
+    }).select("_id");
+
+    const storeIds = stores.map(
+      store => store._id
+    );
+
+    // Remove user's listings from favorites
+    if (listingIds.length > 0) {
+      await User.updateMany(
+        {
+          saved: {
+            $in: listingIds,
+          },
+        },
+        {
+          $pull: {
+            saved: {
+              $in: listingIds,
+            },
+          },
+        }
+      );
+    }
+
+    // Remove user's stores from followers
+    if (storeIds.length > 0) {
+      await User.updateMany(
+        {
+          followingStores: {
+            $in: storeIds,
+          },
+        },
+        {
+          $pull: {
+            followingStores: {
+              $in: storeIds,
+            },
+          },
+        }
+      );
+    }
+
+    // Anonymize messages
+    await Message.updateMany(
+      {
+        sender: userId,
+      },
+      {
+        $set: {
+          sender: null,
+        },
+      }
+    );
+
+    // Remove user from conversations
+    await Conversation.updateMany(
+      {
+        buyer: userId,
+      },
+      {
+        $set: {
+          buyer: null,
+        },
+      }
+    );
+
+    await Conversation.updateMany(
+      {
+        seller: userId,
+      },
+      {
+        $set: {
+          seller: null,
+        },
+      }
+    );
+
+    // Delete listings
+    if (listingIds.length > 0) {
+      await Listing.deleteMany({
+        _id: {
+          $in: listingIds,
+        },
+      });
+    }
+
+    // Delete stores
+    if (storeIds.length > 0) {
+      await Store.deleteMany({
+        _id: {
+          $in: storeIds,
+        },
+      });
+    }
+
+    // Delete user
+    await User.deleteOne({
+      _id: userId,
+    });
+
+    // Confirmation page
+    return res.status(200).send(`
+      <!DOCTYPE html>
+
+      <html>
+        <head>
+          <title>Account Deleted</title>
+        </head>
+
+        <body style="
+          font-family: Arial;
+          text-align: center;
+          padding: 60px 20px;
+        ">
+
+          <h1>Account Deleted</h1>
+
+          <p>
+            Your WebTraffic account has been successfully deleted.
+          </p>
+
+          <p>
+            You can close this page.
+          </p>
+
+        </body>
+      </html>
+    `);
+
+  } catch (error) {
+    console.error(
+      "CONFIRM DELETE ERROR:",
+      error
+    );
+
+    return res.status(500).send(`
+      <h2>Something went wrong</h2>
+      <p>
+        We couldn't complete your account deletion.
+        Please try again later.
+      </p>
+    `);
+  }
+};
+
 module.exports = {
   register,
   login,
   googleLogin,
   getUser,
   deleteAccount,
+  requestAccountDeletion,
+  confirmAccountDeletion
 };
