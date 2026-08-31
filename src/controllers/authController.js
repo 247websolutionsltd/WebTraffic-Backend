@@ -488,7 +488,7 @@ const requestAccountDeletion = async (req, res) => {
 
     const resend = require("../config/email");
 
-    await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: "WebTraffic <tomyomo@gmail.com>",
       to: [user.email],
 
@@ -574,7 +574,7 @@ const requestAccountDeletion = async (req, res) => {
       });
     }
 
-console.log("RESEND EMAIL SUCCESS:", data);
+    console.log("RESEND EMAIL SUCCESS:", data);
 
     return res.status(200).json({
       message:
