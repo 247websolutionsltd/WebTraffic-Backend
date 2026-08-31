@@ -490,7 +490,7 @@ const requestAccountDeletion = async (req, res) => {
 
     await resend.emails.send({
       from: "WebTraffic <onboarding@resend.dev>",
-      to: ["delivered@resend.dev"],
+      to: [user.email],
 
       subject: "Confirm your WebTraffic account deletion",
 
