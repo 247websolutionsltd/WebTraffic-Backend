@@ -1,6 +1,8 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
+const Listing = require("../models/Listing");
+const Store = require("../models/Store");
 
 const User = require("../models/User");
 
@@ -263,9 +265,48 @@ const getUser = async (req, res) => {
   }
 };
 
+const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    // Delete user's listings
+    await Listing.deleteMany({
+      seller: userId,
+    });
+
+    // Delete user's stores
+    await Store.deleteMany({
+      owner: userId,
+    });
+
+    // Delete the user
+    await User.findByIdAndDelete(userId);
+
+    return res.status(200).json({
+      message: "Account deleted successfully",
+    });
+
+  } catch (error) {
+    console.error("DELETE ACCOUNT ERROR:", error);
+
+    return res.status(500).json({
+      message: "Failed to delete account",
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
   googleLogin,
-  getUser
+  getUser,
+  deleteAccount,
 };
