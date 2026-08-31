@@ -43,6 +43,16 @@ const userSchema = new mongoose.Schema(
       default: "",
     },
 
+    deleteAccountToken: {
+      type: String,
+      select: false,
+    },
+
+    deleteAccountTokenExpires: {
+      type: Date,
+      select: false,
+    },
+
     // Stores the user follows
     stores: [
       {
