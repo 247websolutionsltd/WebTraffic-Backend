@@ -8,17 +8,17 @@ const createConversation = async (req, res) => {
 
     const {
       listingId,
-      sellerId,
+      storeId,
     } = req.body;
 
-    if (!listingId || !sellerId) {
+    if (!listingId || !storeId) {
       return res.status(400).json({
-        message: "Listing and seller are required",
+        message: "Listing and store are required",
       });
     }
 
     // Don't allow someone to message themselves
-    if (buyerId === sellerId) {
+    if (buyerId === storeId) {
       return res.status(400).json({
         message: "You cannot message yourself",
       });
@@ -35,14 +35,14 @@ const createConversation = async (req, res) => {
       });
     }
 
-    // Make sure seller actually owns the listing
+    // Make sure store actually owns the listing
     if (
-      listing.seller.toString() !==
-      sellerId.toString()
+      listing.store.toString() !==
+      storeId.toString()
     ) {
       return res.status(400).json({
         message:
-          "This seller does not own this listing",
+          "This store does not own this listing",
       });
     }
 
@@ -50,7 +50,7 @@ const createConversation = async (req, res) => {
     let conversation =
       await Conversation.findOne({
         buyer: buyerId,
-        seller: sellerId,
+        store: storeId,
         listing: listingId,
       });
 
@@ -59,7 +59,7 @@ const createConversation = async (req, res) => {
       conversation =
         await Conversation.create({
           buyer: buyerId,
-          seller: sellerId,
+          store: storeId,
           listing: listingId,
         });
     }
@@ -73,8 +73,8 @@ const createConversation = async (req, res) => {
           "firstName lastName profileImage"
         )
         .populate(
-          "seller",
-          "firstName lastName profileImage"
+          "store",
+          "name logo"
         )
         .populate(
           "listing",
