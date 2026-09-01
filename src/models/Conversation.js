@@ -14,6 +14,12 @@ const conversationSchema = new mongoose.Schema(
       default: null,
     },
 
+    store: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Store",
+      default: null,
+    },
+
     listing: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Listing",
