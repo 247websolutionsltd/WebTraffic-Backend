@@ -14,6 +14,12 @@ const messageSchema = new mongoose.Schema(
       default: null,
     },
 
+    store: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Store",
+      default: null,
+    },
+
     text: {
       type: String,
       trim: true,
