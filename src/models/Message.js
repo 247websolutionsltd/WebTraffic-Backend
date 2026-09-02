@@ -11,19 +11,18 @@ const messageSchema = new mongoose.Schema(
     sender: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      default: null,
+      required: true,
     },
 
-    store: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Store",
-      default: null,
-    },
-
-    text: {
+    message: {
       type: String,
       trim: true,
-      required: true,
+      default: "",
+    },
+
+    image: {
+      type: String,
+      default: "",
     },
 
     read: {
@@ -31,9 +30,7 @@ const messageSchema = new mongoose.Schema(
       default: false,
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 messageSchema.index({
@@ -41,7 +38,4 @@ messageSchema.index({
   createdAt: 1,
 });
 
-module.exports = mongoose.model(
-  "Message",
-  messageSchema
-);
+module.exports = mongoose.model("Message", messageSchema);

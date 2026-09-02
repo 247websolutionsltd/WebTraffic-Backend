@@ -10,6 +10,7 @@ const {
   getMyStore,
   getStoreById,
 } = require("../controllers/storeController");
+const {getStoreConversations} = require("../controllers/messageController");
 
 const protect = require("../middleware/authMiddleware");
 const upload = require("../middleware/uploadMiddleware");
@@ -25,6 +26,8 @@ router.delete(
   protect,
   unfollowStore
 );
+
+router.get("/conversations", getStoreConversations);
 
 router.get("/:id", getStoreById);
 

@@ -5,29 +5,15 @@ const Message = require("../models/Message");
 const createConversation = async (req, res) => {
   try {
     const buyerId = req.user.id;
+    const { listingId } = req.body;
 
-    const {
-      listingId,
-      storeId,
-    } = req.body;
-
-    if (!listingId || !storeId) {
+    if (!listingId) {
       return res.status(400).json({
-        message: "Listing and store are required",
+        message: "Listing ID is required",
       });
     }
 
-    // Don't allow someone to message themselves
-    if (buyerId === storeId) {
-      return res.status(400).json({
-        message: "You cannot message yourself",
-      });
-    }
-
-    // Make sure listing exists
-    const listing = await Listing.findById(
-      listingId
-    );
+    const listing = await Listing.findById(listingId);
 
     if (!listing) {
       return res.status(404).json({
@@ -35,62 +21,39 @@ const createConversation = async (req, res) => {
       });
     }
 
-    // Make sure store actually owns the listing
-    if (
-      listing.store.toString() !==
-      storeId.toString()
-    ) {
+    const storeId = listing.store;
+
+    if (!storeId) {
       return res.status(400).json({
-        message:
-          "This store does not own this listing",
+        message: "This listing does not belong to a store",
       });
     }
 
-    // Check if conversation already exists
-    let conversation =
-      await Conversation.findOne({
-        buyer: buyerId,
-        store: storeId,
-        listing: listingId,
-      });
-
-    // Create if it doesn't exist
-    if (!conversation) {
-      conversation =
-        await Conversation.create({
-          buyer: buyerId,
-          store: storeId,
-          listing: listingId,
-        });
-    }
-
-    const populatedConversation =
-      await Conversation.findById(
-        conversation._id
-      )
-        .populate(
-          "buyer",
-          "firstName lastName profileImage"
-        )
-        .populate(
-          "store",
-          "name logo"
-        )
-        .populate(
-          "listing",
-          "title price images"
-        );
-
-    return res.status(200).json({
-      conversation:
-        populatedConversation,
+    const existingConversation = await Conversation.findOne({
+      buyer: buyerId,
+      store: storeId,
+      listing: listingId,
     });
 
+    if (existingConversation) {
+      return res.status(200).json({
+        success: true,
+        conversation: existingConversation,
+      });
+    }
+
+    const conversation = await Conversation.create({
+      buyer: buyerId,
+      store: storeId,
+      listing: listingId,
+    });
+
+    return res.status(201).json({
+      success: true,
+      conversation,
+    });
   } catch (error) {
-    console.error(
-      "CREATE CONVERSATION ERROR:",
-      error
-    );
+    console.error("CREATE CONVERSATION ERROR:", error);
 
     return res.status(500).json({
       message: "Failed to create conversation",
@@ -130,7 +93,7 @@ const sendMessage = async (req, res) => {
     const isParticipant =
       conversation.buyer.toString() ===
         senderId.toString() ||
-      conversation.seller.toString() ===
+      conversation.se.toString() ===
         senderId.toString();
 
     if (!isParticipant) {
@@ -231,52 +194,65 @@ const getMessages = async (req, res) => {
   }
 };
 
-const getMyConversations = async (
-  req,
-  res
-) => {
+const getMyConversations = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const conversations =
-      await Conversation.find({
-        $or: [
-          { buyer: userId },
-          { store: userId },
-        ],
-      })
-        .populate(
-          "buyer",
-          "firstName lastName profileImage"
-        )
-        .populate(
-          "store",
-          "name logo"
-        )
-        .populate(
-          "listing",
-          "title price images"
-        )
-        .populate(
-          "lastMessage",
-          "text sender createdAt"
-        )
-        .sort({
-          lastMessageAt: -1,
-        });
+    const conversations = await Conversation.find({
+      buyer: userId,
+    })
+      .populate("buyer", "firstName lastName profileImage")
+      .populate("store")
+      .populate("listing", "title price images")
+      .sort({ updatedAt: -1 });
 
     return res.status(200).json({
+      success: true,
       conversations,
     });
-
   } catch (error) {
-    console.error(
-      "GET CONVERSATIONS ERROR:",
-      error
-    );
+    console.error("GET CONVERSATIONS ERROR:", error);
 
     return res.status(500).json({
-      message: "Failed to fetch conversations",
+      message: "Failed to get conversations",
+    });
+  }
+};
+
+
+const getStoreConversations = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Find the store owned by the logged-in user
+    const store = await Store.findOne({
+      owner: userId,
+    });
+
+    if (!store) {
+      return res.status(404).json({
+        message: "Store not found",
+      });
+    }
+
+    // Get conversations for this store
+    const conversations = await Conversation.find({
+      store: store._id,
+    })
+      .populate("buyer", "firstName lastName profileImage")
+      .populate("store", "name logo")
+      .populate("listing", "title price images")
+      .sort({ updatedAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      conversations,
+    });
+  } catch (error) {
+    console.error("GET STORE CONVERSATIONS ERROR:", error);
+
+    return res.status(500).json({
+      message: "Failed to get store conversations",
     });
   }
 };
@@ -285,5 +261,6 @@ module.exports = {
   createConversation,
   sendMessage,
   getMessages,
-  getMyConversations
+  getMyConversations,
+  getStoreConversations
 };
