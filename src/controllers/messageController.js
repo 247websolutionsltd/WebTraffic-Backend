@@ -93,7 +93,7 @@ const sendMessage = async (req, res) => {
     const isParticipant =
       conversation.buyer.toString() ===
         senderId.toString() ||
-      conversation.se.toString() ===
+      conversation.sender.toString() ===
         senderId.toString();
 
     if (!isParticipant) {
