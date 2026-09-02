@@ -157,7 +157,7 @@ const getMessages = async (req, res) => {
     const isParticipant =
       conversation.buyer.toString() ===
         userId.toString() ||
-      conversation.store.toString() ===
+      conversation.seller.toString() ===
         userId.toString();
 
     if (!isParticipant) {
@@ -171,8 +171,8 @@ const getMessages = async (req, res) => {
         conversation: conversationId,
       })
         .populate(
-          "store",
-          "name logo"
+          "sender",
+          "firstName lastName profileImage"
         )
         .sort({
           createdAt: 1,
