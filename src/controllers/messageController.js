@@ -242,7 +242,7 @@ const getMyConversations = async (
       await Conversation.find({
         $or: [
           { buyer: userId },
-          { seller: userId },
+          { store: userId },
         ],
       })
         .populate(
@@ -250,8 +250,8 @@ const getMyConversations = async (
           "firstName lastName profileImage"
         )
         .populate(
-          "seller",
-          "firstName lastName profileImage"
+          "store",
+          "name logo"
         )
         .populate(
           "listing",
