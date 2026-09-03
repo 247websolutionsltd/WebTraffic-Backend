@@ -158,7 +158,7 @@ const getMessages = async (req, res) => {
     const isParticipant =
       conversation.buyer.toString() ===
         userId.toString() ||
-      conversation.seller.toString() ===
+      conversation.store.toString() ===
         userId.toString();
 
     if (!isParticipant) {
