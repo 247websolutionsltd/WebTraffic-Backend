@@ -68,9 +68,9 @@ const sendMessage = async (req, res) => {
   try {
     const userId = req.user.id;
     const { conversationId } = req.params;
-    const { message, image } = req.body;
+    const { text, image } = req.body;
 
-    if ((!message || !message.trim()) && !image) {
+    if ((!text || !text.trim()) && !image) {
       return res.status(400).json({
         success: false,
         message: "Message or image is required",
@@ -115,7 +115,7 @@ const sendMessage = async (req, res) => {
     const newMessage = await Message.create({
       conversation: conversationId,
       sender: userId,
-      message: message ? message.trim() : "",
+      text: text ? text.trim() : "",
       image: image || "",
     });
 
