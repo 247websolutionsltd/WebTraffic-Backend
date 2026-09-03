@@ -94,7 +94,7 @@ const sendMessage = async (req, res) => {
     const isParticipant =
       conversation.buyer.toString() ===
         senderId.toString() ||
-      conversation.sender.toString() ===
+      conversation.store.toString() ===
         senderId.toString();
 
     if (!isParticipant) {
@@ -144,53 +144,57 @@ const getMessages = async (req, res) => {
     const userId = req.user.id;
     const { conversationId } = req.params;
 
-    const conversation =
-      await Conversation.findById(
-        conversationId
-      );
+    const conversation = await Conversation.findById(conversationId);
 
     if (!conversation) {
       return res.status(404).json({
+        success: false,
         message: "Conversation not found",
       });
     }
 
-    const isParticipant =
-      conversation.buyer.toString() ===
-        userId.toString() ||
-      conversation.store.toString() ===
-        userId.toString();
+    // Check whether the logged-in user is the buyer
+    const isBuyer =
+      conversation.buyer.toString() === userId.toString();
 
-    if (!isParticipant) {
+    // Check whether the logged-in user owns the store
+    let isStoreOwner = false;
+
+    if (!isBuyer) {
+      const store = await Store.findOne({
+        _id: conversation.store,
+        owner: userId,
+      });
+
+      if (store) {
+        isStoreOwner = true;
+      }
+    }
+
+    // User must either be the buyer or store owner
+    if (!isBuyer && !isStoreOwner) {
       return res.status(403).json({
-        message: "Access denied",
+        success: false,
+        message: "You are not part of this conversation",
       });
     }
 
-    const messages =
-      await Message.find({
-        conversation: conversationId,
-      })
-        .populate(
-          "sender",
-          "firstName lastName profileImage"
-        )
-        .sort({
-          createdAt: 1,
-        });
+    const messages = await Message.find({
+      conversation: conversationId,
+    })
+      .populate("sender", "firstName lastName profileImage")
+      .sort({ createdAt: 1 });
 
     return res.status(200).json({
+      success: true,
       messages,
     });
-
   } catch (error) {
-    console.error(
-      "GET MESSAGES ERROR:",
-      error
-    );
+    console.error("GET MESSAGES ERROR:", error);
 
     return res.status(500).json({
-      message: "Failed to fetch messages",
+      success: false,
+      message: "Failed to get messages",
     });
   }
 };
