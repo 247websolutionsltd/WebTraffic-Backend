@@ -66,74 +66,77 @@ const createConversation = async (req, res) => {
 
 const sendMessage = async (req, res) => {
   try {
-    const senderId = req.user.id;
+    const userId = req.user.id;
+    const { conversationId } = req.params;
+    const { message, image } = req.body;
 
-    const {
-      conversationId,
-      text,
-    } = req.body;
-
-    if (!conversationId || !text?.trim()) {
+    if ((!message || !message.trim()) && !image) {
       return res.status(400).json({
-        message: "Conversation and message are required",
+        success: false,
+        message: "Message or image is required",
       });
     }
 
-    const conversation =
-      await Conversation.findById(
-        conversationId
-      );
+    const conversation = await Conversation.findById(conversationId);
 
     if (!conversation) {
       return res.status(404).json({
+        success: false,
         message: "Conversation not found",
       });
     }
 
-    // Make sure sender belongs to conversation
-    const isParticipant =
-      conversation.buyer.toString() ===
-        senderId.toString() ||
-      conversation.store.toString() ===
-        senderId.toString();
+    // Check if user is the buyer
+    const isBuyer =
+      conversation.buyer.toString() === userId.toString();
 
-    if (!isParticipant) {
+    // Check if user owns the store
+    let isStoreOwner = false;
+
+    if (!isBuyer) {
+      const store = await Store.findOne({
+        _id: conversation.store,
+        owner: userId,
+      });
+
+      if (store) {
+        isStoreOwner = true;
+      }
+    }
+
+    if (!isBuyer && !isStoreOwner) {
       return res.status(403).json({
+        success: false,
         message: "You are not part of this conversation",
       });
     }
-    console.log(text)
-    const message = await Message.create({
+
+    // Create message
+    const newMessage = await Message.create({
       conversation: conversationId,
-      sender: senderId,
-      text: text.trim(),
+      sender: userId,
+      message: message ? message.trim() : "",
+      image: image || "",
     });
 
-    // Update conversation
-    conversation.lastMessage = message._id;
-    conversation.lastMessageAt =
-      message.createdAt;
+    // Update conversation timestamp
+    await Conversation.findByIdAndUpdate(conversationId, {
+      updatedAt: new Date(),
+    });
 
-    await conversation.save();
-
-    const populatedMessage =
-      await Message.findById(message._id)
-        .populate(
-          "sender",
-          "firstName lastName profileImage"
-        );
+    // Populate sender
+    const populatedMessage = await Message.findById(newMessage._id)
+      .populate("sender", "firstName lastName profileImage");
 
     return res.status(201).json({
+      success: true,
       message: populatedMessage,
     });
-
   } catch (error) {
-    console.error(
-      "SEND MESSAGE ERROR:",
-      error
-    );
+    console.error("SEND MESSAGE ERROR:", error);
 
     return res.status(500).json({
+      success: false,
       message: "Failed to send message",
     });
   }
