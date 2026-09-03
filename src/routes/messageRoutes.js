@@ -33,14 +33,14 @@ router.get(
 
 router.get(
   "/buyer",
-  authMiddleware,
+  protect,
   getBuyerConversations
 );
 
 // Store inbox
 router.get(
   "/store",
-  authMiddleware,
+  protect,
   getStoreConversations
 );
 
