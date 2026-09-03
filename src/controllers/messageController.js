@@ -101,7 +101,7 @@ const sendMessage = async (req, res) => {
         message: "You are not part of this conversation",
       });
     }
-
+    console.log(text)
     const message = await Message.create({
       conversation: conversationId,
       sender: senderId,
