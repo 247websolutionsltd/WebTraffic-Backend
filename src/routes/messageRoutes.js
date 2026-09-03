@@ -20,7 +20,7 @@ router.post(
 );
 
 router.post(
-  "/",
+  "/:conversationId/messages",
   protect,
   sendMessage
 );
