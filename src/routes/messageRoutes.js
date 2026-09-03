@@ -47,7 +47,7 @@ router.get(
 // Mark messages as read
 router.patch(
   "/:conversationId/read",
-  authMiddleware,
+  protect,
   markMessagesAsRead
 );
 
