@@ -6,7 +6,9 @@ const {
   createConversation,
   sendMessage,
   getMessages,
-  getMyConversations
+  getBuyerConversations,
+  getStoreConversations,
+  markMessagesAsRead,
 } = require("../controllers/messageController");
 
 const protect = require("../middleware/authMiddleware");
@@ -30,9 +32,23 @@ router.get(
 );
 
 router.get(
-  "/conversations",
-  protect,
-  getMyConversations
+  "/buyer",
+  authMiddleware,
+  getBuyerConversations
+);
+
+// Store inbox
+router.get(
+  "/store",
+  authMiddleware,
+  getStoreConversations
+);
+
+// Mark messages as read
+router.patch(
+  "/:conversationId/read",
+  authMiddleware,
+  markMessagesAsRead
 );
 
 module.exports = router;

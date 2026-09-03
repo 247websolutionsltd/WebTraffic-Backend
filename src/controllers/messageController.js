@@ -286,10 +286,77 @@ const getStoreConversations = async (req, res) => {
   }
 };
 
+const markMessagesAsRead = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { conversationId } = req.params;
+
+    const conversation = await Conversation.findById(conversationId);
+
+    if (!conversation) {
+      return res.status(404).json({
+        success: false,
+        message: "Conversation not found",
+      });
+    }
+
+    const isBuyer =
+      conversation.buyer.toString() === userId.toString();
+
+    let isStoreOwner = false;
+
+    if (!isBuyer) {
+      const store = await Store.findOne({
+        _id: conversation.store,
+        owner: userId,
+      });
+
+      if (store) {
+        isStoreOwner = true;
+      }
+    }
+
+    if (!isBuyer && !isStoreOwner) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not part of this conversation",
+      });
+    }
+
+    // Only mark messages sent by the OTHER person as read
+    await Message.updateMany(
+      {
+        conversation: conversationId,
+        sender: { $ne: userId },
+        read: false,
+      },
+      {
+        $set: {
+          read: true,
+        },
+      }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Messages marked as read",
+    });
+  } catch (error) {
+    console.error("MARK MESSAGES READ ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to mark messages as read",
+    });
+  }
+};
+
 module.exports = {
   createConversation,
   sendMessage,
   getMessages,
   getMyConversations,
-  getStoreConversations
+  getBuyerConversations,
+  getStoreConversations,
+  markMessagesAsRead
 };
