@@ -240,7 +240,7 @@ const getBuyerConversations = async (req, res) => {
       .populate("listing", "title price images")
       .populate(
         "lastMessage",
-        "message image sender createdAt read"
+        "text image sender createdAt read"
       )
       .sort({ updatedAt: -1 });
 
@@ -283,7 +283,7 @@ const getStoreConversations = async (req, res) => {
       .populate("listing", "title price images")
       .populate(
         "lastMessage",
-        "message image sender createdAt read"
+        "text image sender createdAt read"
       )
       .sort({ updatedAt: -1 });
 
