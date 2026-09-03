@@ -238,6 +238,10 @@ const getBuyerConversations = async (req, res) => {
       .populate("buyer", "firstName lastName profileImage")
       .populate("store", "name logo")
       .populate("listing", "title price images")
+      .populate(
+        "lastMessage",
+        "message image sender createdAt read"
+      )
       .sort({ updatedAt: -1 });
 
     return res.status(200).json({
@@ -277,6 +281,10 @@ const getStoreConversations = async (req, res) => {
       .populate("buyer", "firstName lastName profileImage")
       .populate("store", "name logo")
       .populate("listing", "title price images")
+      .populate(
+        "lastMessage",
+        "message image sender createdAt read"
+      )
       .sort({ updatedAt: -1 });
 
     return res.status(200).json({
