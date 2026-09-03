@@ -198,11 +198,23 @@ const getMyConversations = async (req, res) => {
   try {
     const userId = req.user.id;
 
+    // Find the store owned by the logged-in user
+    const store = await Store.findOne({
+      owner: userId,
+    });
+
+    if (!store) {
+      return res.status(404).json({
+        message: "You don't have a store",
+      });
+    }
+
+    // Get conversations involving this store
     const conversations = await Conversation.find({
-      buyer: userId,
+      store: store._id,
     })
       .populate("buyer", "firstName lastName profileImage")
-      .populate("store")
+      .populate("store", "name logo")
       .populate("listing", "title price images")
       .sort({ updatedAt: -1 });
 
@@ -211,7 +223,7 @@ const getMyConversations = async (req, res) => {
       conversations,
     });
   } catch (error) {
-    console.error("GET CONVERSATIONS ERROR:", error);
+    console.error("GET STORE CONVERSATIONS ERROR:", error);
 
     return res.status(500).json({
       message: "Failed to get conversations",
