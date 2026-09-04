@@ -41,14 +41,14 @@ router.patch(
   "/me",
   protect,
   upload.single("logo"),
-  updateMyStore
+  updateMyProfile
 );
 
 router.patch(
   "/store",
   protect,
   upload.single("logo"),
-  updateMyProfile
+  updateMyStore
 );
 
 
