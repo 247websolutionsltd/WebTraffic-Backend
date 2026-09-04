@@ -302,6 +302,148 @@ const getStoreById = async (req, res) => {
   }
 };
 
+const updateMyProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const {
+      firstName,
+      lastName,
+      phone,
+    } = req.body;
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Update only fields that were actually provided
+    if (firstName !== undefined) {
+      user.firstName = firstName.trim();
+    }
+
+    if (lastName !== undefined) {
+      user.lastName = lastName.trim();
+    }
+
+    if (phone !== undefined) {
+      user.phone = phone.trim();
+    }
+
+    // Upload new profile image if provided
+    if (req.file) {
+      const result = await uploadToCloudinary(
+        req.file,
+        "webtraffic/users/profile"
+      );
+
+      user.profileImage = result.secure_url;
+    }
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      user,
+    });
+
+  } catch (error) {
+    console.error("UPDATE PROFILE ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update profile",
+    });
+  }
+};
+
+
+const updateMyStore = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const {
+      name,
+      description,
+      phone,
+      email,
+      city,
+      state,
+      country,
+    } = req.body;
+
+    const store = await Store.findOne({
+      owner: userId,
+    });
+
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        message: "You don't have a store",
+      });
+    }
+
+    if (name !== undefined) {
+      store.name = name.trim();
+    }
+
+    if (description !== undefined) {
+      store.description = description.trim();
+    }
+
+    if (phone !== undefined) {
+      store.phone = phone.trim();
+    }
+
+    if (email !== undefined) {
+      store.email = email.trim().toLowerCase();
+    }
+
+    if (city !== undefined) {
+      store.location.city = city.trim();
+    }
+
+    if (state !== undefined) {
+      store.location.state = state.trim();
+    }
+
+    if (country !== undefined) {
+      store.location.country = country.trim();
+    }
+
+    // New logo
+    if (req.file) {
+      const result = await uploadToCloudinary(
+        req.file,
+        "webtraffic/stores/logos"
+      );
+
+      store.logo = result.secure_url;
+    }
+
+    await store.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Store updated successfully",
+      store,
+    });
+
+  } catch (error) {
+    console.error("UPDATE STORE ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update store",
+    });
+  }
+};
+
 
 module.exports = {
   createStore,
@@ -310,4 +452,6 @@ module.exports = {
   getStores,
   getMyStore,
   getStoreById,
+  updateMyStore,
+  updateMyProfile
 };

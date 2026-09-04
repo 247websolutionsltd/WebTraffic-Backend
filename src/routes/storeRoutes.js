@@ -9,6 +9,8 @@ const {
   getStores,
   getMyStore,
   getStoreById,
+  updateMyStore,
+  updateMyProfile
 } = require("../controllers/storeController");
 const {getStoreConversations} = require("../controllers/messageController");
 
@@ -34,5 +36,20 @@ router.get("/:id", getStoreById);
 router.get("/my-store", protect, getMyStore);
 
 router.get("/", getStores);
+
+router.patch(
+  "/me",
+  protect,
+  upload.single("logo"),
+  updateMyStore
+);
+
+router.patch(
+  "/store",
+  protect,
+  upload.single("logo"),
+  updateMyProfile
+);
+
 
 module.exports = router;
