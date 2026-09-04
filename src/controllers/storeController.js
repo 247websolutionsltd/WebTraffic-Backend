@@ -275,7 +275,8 @@ const getStoreById = async (req, res) => {
         "firstName lastName profileImage phone"
       )
       .populate(
-        "followers"
+        "followers",
+        "firstName lastName profileImage"
       )
       .populate(
         "listings",
